@@ -23,17 +23,20 @@
 }
 
 .shipgoal__track {
-  height: 8px;
+  display: block;
+  height: 8px !important;
   border-radius: 999px;
-  background: var(--sg-track, #f3f4f6);
+  background-color: var(--sg-track, #f3f4f6) !important;
   overflow: hidden;
 }
 
 .shipgoal__fill {
-  height: 100%;
+  display: block;
+  height: 8px !important;
   width: 0;
   border-radius: 999px;
-  background: var(--sg-bar, #16a34a);
+  background-color: var(--sg-bar, #16a34a) !important;
+  background-image: none !important;
   transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
