@@ -1,0 +1,20 @@
+# Hinweis: Nach dem Anlegen der App im Partner Dashboard einmal
+# `shopify app config link` ausführen – die CLI trägt client_id selbst ein.
+name = "ShipGoal - Versandziel"
+client_id = "HIER_CLIENT_ID_EINTRAGEN"
+application_url = "https://shipgoal.onrender.com"
+embedded = true
+
+[access_scopes]
+scopes = ""
+
+[auth]
+redirect_urls = ["https://shipgoal.onrender.com/api/auth/callback"]
+
+[webhooks]
+api_version = "2025-07"
+
+[webhooks.privacy_compliance]
+customer_data_request_url = "https://shipgoal.onrender.com/api/webhooks"
+customer_deletion_url = "https://shipgoal.onrender.com/api/webhooks"
+shop_deletion_url = "https://shipgoal.onrender.com/api/webhooks"

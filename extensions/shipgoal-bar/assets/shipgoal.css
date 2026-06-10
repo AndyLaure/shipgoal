@@ -1,0 +1,84 @@
+/* ShipGoal / Versandziel – Storefront-Styles */
+.shipgoal {
+  background: var(--sg-bg, #ffffff);
+  color: var(--sg-text, #111827);
+  font-size: 14px;
+  line-height: 1.3;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  position: relative;
+  z-index: 60;
+  overflow: hidden;
+}
+
+.shipgoal__inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 8px 16px 10px;
+  text-align: center;
+}
+
+.shipgoal__text {
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.shipgoal__track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--sg-track, #f3f4f6);
+  overflow: hidden;
+}
+
+.shipgoal__fill {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: var(--sg-bar, #16a34a);
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.shipgoal--top_fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.shipgoal--bottom_fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.shipgoal__confetti {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: hsl(var(--sg-hue, 140), 80%, 55%);
+  animation: sg-fall 1.4s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes sg-fall {
+  from {
+    transform: translate(0, -10px) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--sg-dx, 0), 90px) rotate(540deg);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shipgoal__fill {
+    transition: none;
+  }
+  .shipgoal__confetti {
+    display: none;
+  }
+}

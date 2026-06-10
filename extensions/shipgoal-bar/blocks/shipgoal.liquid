@@ -1,0 +1,144 @@
+{%- liquid
+  assign plan = app.metafields.shipgoal.plan | default: 'free'
+  assign threshold = block.settings.threshold | default: 50
+  assign threshold_cents = threshold | times: 100
+
+  comment
+    Pro-Gating passiert hier in Liquid (serverseitig gerendert),
+    damit Free-Shops Pro-Optionen nicht per JS freischalten koennen.
+  endcomment
+  assign bar_color = '#16a34a'
+  assign track_color = '#f3f4f6'
+  assign text_color = '#111827'
+  assign banner_bg = '#ffffff'
+  assign position = 'top'
+  assign confetti = false
+
+  if plan == 'pro'
+    assign bar_color = block.settings.bar_color
+    assign track_color = block.settings.track_color
+    assign text_color = block.settings.text_color
+    assign banner_bg = block.settings.banner_bg
+    assign position = block.settings.position
+    assign confetti = block.settings.confetti
+  endif
+-%}
+<div
+  id="shipgoal-bar"
+  class="shipgoal shipgoal--{{ position }}"
+  data-threshold="{{ threshold_cents }}"
+  data-total="{{ cart.total_price }}"
+  data-currency="{{ cart.currency.iso_code }}"
+  data-locale="{{ request.locale.iso_code }}"
+  data-plan="{{ plan }}"
+  data-msg-empty="{{ block.settings.msg_empty | escape }}"
+  data-msg-progress="{{ block.settings.msg_progress | escape }}"
+  data-msg-reached="{{ block.settings.msg_reached | escape }}"
+  data-hide-empty="{{ block.settings.hide_when_empty }}"
+  data-confetti="{{ confetti }}"
+  style="--sg-bar: {{ bar_color }}; --sg-track: {{ track_color }}; --sg-text: {{ text_color }}; --sg-bg: {{ banner_bg }};"
+  role="status"
+  aria-live="polite"
+  hidden
+>
+  <div class="shipgoal__inner">
+    <div class="shipgoal__text"></div>
+    <div class="shipgoal__track">
+      <div class="shipgoal__fill"></div>
+    </div>
+  </div>
+</div>
+{{ 'shipgoal.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'shipgoal.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Versandziel Leiste",
+  "target": "body",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Gratisversand-Ziel"
+    },
+    {
+      "type": "number",
+      "id": "threshold",
+      "label": "Schwelle für Gratisversand (€)",
+      "default": 50
+    },
+    {
+      "type": "header",
+      "content": "Texte – {amount} wird durch den Betrag ersetzt"
+    },
+    {
+      "type": "text",
+      "id": "msg_empty",
+      "label": "Text bei leerem Warenkorb",
+      "default": "Gratisversand ab {amount}"
+    },
+    {
+      "type": "text",
+      "id": "msg_progress",
+      "label": "Text während Fortschritt",
+      "default": "Noch {amount} bis zum Gratisversand!"
+    },
+    {
+      "type": "text",
+      "id": "msg_reached",
+      "label": "Text bei Erreichen",
+      "default": "🎉 Du hast Gratisversand erreicht!"
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_when_empty",
+      "label": "Bei leerem Warenkorb ausblenden",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Pro-Funktionen (aktiv ab Pro-Plan)"
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "Position",
+      "options": [
+        { "value": "top", "label": "Oben (im Seitenfluss)" },
+        { "value": "top_fixed", "label": "Oben fixiert" },
+        { "value": "bottom_fixed", "label": "Unten fixiert" }
+      ],
+      "default": "top"
+    },
+    {
+      "type": "color",
+      "id": "bar_color",
+      "label": "Balkenfarbe",
+      "default": "#16a34a"
+    },
+    {
+      "type": "color",
+      "id": "track_color",
+      "label": "Balken-Hintergrund",
+      "default": "#f3f4f6"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Textfarbe",
+      "default": "#111827"
+    },
+    {
+      "type": "color",
+      "id": "banner_bg",
+      "label": "Leisten-Hintergrund",
+      "default": "#ffffff"
+    },
+    {
+      "type": "checkbox",
+      "id": "confetti",
+      "label": "Konfetti beim Erreichen",
+      "default": true
+    }
+  ]
+}
+{% endschema %}
