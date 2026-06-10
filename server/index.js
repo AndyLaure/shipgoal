@@ -87,11 +87,44 @@ const app = express();
 
 // OAuth-Routen
 app.get(shopify.config.auth.path, shopify.auth.begin());
-app.get(
-  shopify.config.auth.callbackPath,
-  shopify.auth.callback(),
-  shopify.redirectToShopifyOrAppRoot()
-);
+
+// Eigener Callback statt shopify.auth.callback():
+// Seit 1.4.2026 MÜSSEN neue Public Apps ablaufende Offline-Tokens anfordern
+// (expiring: true) – sonst lehnt Shopify alle GraphQL-Calls mit 403 ab.
+// shopify-app-express reicht diese Option (Stand v6/v7) nicht durch.
+shopify.api.webhooks.addHandlers(webhookHandlers);
+
+app.get(shopify.config.auth.callbackPath, async (req, res) => {
+  try {
+    const callbackResponse = await shopify.api.auth.callback({
+      rawRequest: req,
+      rawResponse: res,
+      expiring: true,
+    });
+    const session = callbackResponse.session;
+    await sessionStorage.storeSession(session);
+
+    try {
+      await shopify.api.webhooks.register({ session });
+    } catch (whErr) {
+      console.error('[ShipGoal] Webhook-Registrierung fehlgeschlagen:', whErr);
+    }
+
+    let redirectUrl;
+    try {
+      redirectUrl = await shopify.api.auth.getEmbeddedAppUrl({
+        rawRequest: req,
+        rawResponse: res,
+      });
+    } catch (_e) {
+      redirectUrl = `/?shop=${encodeURIComponent(session.shop)}`;
+    }
+    res.redirect(redirectUrl);
+  } catch (e) {
+    console.error('[ShipGoal] OAuth-Callback fehlgeschlagen:', e);
+    res.status(500).send(`OAuth fehlgeschlagen: ${e.message}`);
+  }
+});
 
 // Webhook-Verarbeitung (vor express.json(): braucht den rohen Body für HMAC)
 app.post(
