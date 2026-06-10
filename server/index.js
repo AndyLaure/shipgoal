@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const { shopifyApp } = require('@shopify/shopify-app-express');
-const { LATEST_API_VERSION, DeliveryMethod } = require('@shopify/shopify-api');
+const { ApiVersion, DeliveryMethod } = require('@shopify/shopify-api');
 const {
   TursoSessionStorage,
   MemorySessionStorage,
@@ -35,7 +35,7 @@ const shopify = shopifyApp({
   api: {
     apiKey: process.env.SHOPIFY_API_KEY,
     apiSecretKey: process.env.SHOPIFY_API_SECRET,
-    apiVersion: LATEST_API_VERSION,
+    apiVersion: ApiVersion.July25,
     scopes: (process.env.SCOPES || '')
       .split(',')
       .map((s) => s.trim())
@@ -191,9 +191,6 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 // Sicherheitsnetz: Fehler loggen statt Prozess-Crash
 process.on('unhandledRejection', (err) => {
   console.error('[ShipGoal] Unhandled Rejection:', err);
-  if (err && err.response && err.response.body) {
-    console.error('[ShipGoal] Shopify-Antwort:', JSON.stringify(err.response.body));
-  }
 });
 process.on('uncaughtException', (err) => {
   console.error('[ShipGoal] Uncaught Exception:', err);

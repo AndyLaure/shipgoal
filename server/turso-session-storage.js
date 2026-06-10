@@ -6,6 +6,7 @@ const { Session } = require('@shopify/shopify-api');
 function reviveSession(payload) {
   const obj = JSON.parse(payload);
   if (obj.expires) obj.expires = new Date(obj.expires);
+  if (obj.refreshTokenExpires) obj.refreshTokenExpires = new Date(obj.refreshTokenExpires);
   return new Session(obj);
 }
 
