@@ -8,6 +8,11 @@ name = "ShipGoal – Versandziel"
 [webhooks]
 api_version = "2025-07"
 
+  [webhooks.privacy_compliance]
+  customer_data_request_url = "https://shipgoal.onrender.com/api/webhooks"
+  customer_deletion_url = "https://shipgoal.onrender.com/api/webhooks"
+  shop_deletion_url = "https://shipgoal.onrender.com/api/webhooks"
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = ""
