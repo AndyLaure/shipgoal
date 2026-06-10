@@ -191,6 +191,9 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 // Sicherheitsnetz: Fehler loggen statt Prozess-Crash
 process.on('unhandledRejection', (err) => {
   console.error('[ShipGoal] Unhandled Rejection:', err);
+  if (err && err.response && err.response.body) {
+    console.error('[ShipGoal] Shopify-Antwort:', JSON.stringify(err.response.body));
+  }
 });
 process.on('uncaughtException', (err) => {
   console.error('[ShipGoal] Uncaught Exception:', err);
