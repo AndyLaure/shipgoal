@@ -25,6 +25,7 @@
 
   var textEl = el.querySelector('.shipgoal__text');
   var fillEl = el.querySelector('.shipgoal__fill');
+  fillEl.style.setProperty('display', 'block', 'important');
   var reached = false;
 
   function msg(name, amountCents) {
