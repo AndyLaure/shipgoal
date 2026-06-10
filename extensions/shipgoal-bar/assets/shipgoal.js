@@ -8,6 +8,11 @@
   var el = document.getElementById('shipgoal-bar');
   if (!el) return;
 
+// App-Embeds landen am Ende des <body> – bei Position "top" nach oben verschieben
+  if (el.classList.contains('shipgoal--top')) {
+    document.body.insertBefore(el, document.body.firstChild);
+  }
+
   var threshold = parseInt(el.dataset.threshold, 10) || 0;
   var currency = el.dataset.currency || 'EUR';
   var locale = (el.dataset.locale || 'de').replace('_', '-');
