@@ -107,7 +107,6 @@
         <h2 style="margin:0">Status</h2>
         <div>
           <span id="plan-badge" class="badge">lädt…</span>
-          <span id="test-badge" class="badge badge--test" style="display:none">Billing-Testmodus</span>
         </div>
       </div>
       <p id="shop-line" class="muted" style="margin:8px 0 0"></p>
@@ -174,7 +173,6 @@
       var state = { plan: null };
 
       var planBadge = document.getElementById('plan-badge');
-      var testBadge = document.getElementById('test-badge');
       var shopLine = document.getElementById('shop-line');
       var errorEl = document.getElementById('error');
       var btnUp = document.getElementById('btn-upgrade');
@@ -203,33 +201,23 @@
             if (d.error) return showError(d.error);
             applyPlan(d.plan);
             shopLine.textContent = d.shop || shop;
-            testBadge.style.display = d.billingTest ? 'inline-block' : 'none';
           })
           .catch(function () { showError('Plan konnte nicht geladen werden.'); });
       }
 
-      btnUp.addEventListener('click', function () {
-        btnUp.disabled = true;
-        fetch('/api/upgrade', { method: 'POST' })
+      // Managed Pricing: Plan-Auswahl (Upgrade UND Downgrade) macht Shopify selbst
+      function goToPricing() {
+        fetch('/api/pricing-url')
           .then(function (r) { return r.json(); })
           .then(function (d) {
-            if (d.confirmationUrl) { open(d.confirmationUrl, '_top'); }
-            else { showError(d.error || 'Upgrade fehlgeschlagen.'); btnUp.disabled = false; }
+            if (d.url) { open(d.url, '_top'); }
+            else { showError(d.error || 'Plan-Seite konnte nicht geöffnet werden.'); }
           })
-          .catch(function () { showError('Upgrade fehlgeschlagen.'); btnUp.disabled = false; });
-      });
+          .catch(function () { showError('Plan-Seite konnte nicht geöffnet werden.'); });
+      }
 
-      btnDown.addEventListener('click', function () {
-        if (!confirm('Pro-Abo wirklich kündigen?')) return;
-        btnDown.disabled = true;
-        fetch('/api/downgrade', { method: 'POST' })
-          .then(function (r) { return r.json(); })
-          .then(function (d) {
-            if (d.plan) applyPlan(d.plan);
-            else showError(d.error || 'Downgrade fehlgeschlagen.');
-          })
-          .catch(function () { showError('Downgrade fehlgeschlagen.'); });
-      });
+      btnUp.addEventListener('click', goToPricing);
+      btnDown.addEventListener('click', goToPricing);
 
       document.getElementById('open-theme-editor').addEventListener('click', function () {
         if (!shop) return;

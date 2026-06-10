@@ -1,5 +1,5 @@
-// ShipGoal / Versandziel – Backend
-// Minimaler Express-Server: OAuth, Billing (Pro 2,99 €/Monat, 14 Tage Trial),
+// ShipGoal / Versandziel – Backend (Managed Pricing Variante)
+// Express-Server: OAuth, Plan-Check über Shopify Managed Pricing,
 // Plan-Sync als App-Metafield (im Theme lesbar), Pflicht-Webhooks, embedded Admin-UI.
 require('dotenv').config();
 
@@ -7,11 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const express = require('express');
 const { shopifyApp } = require('@shopify/shopify-app-express');
-const {
-  LATEST_API_VERSION,
-  DeliveryMethod,
-  BillingInterval,
-} = require('@shopify/shopify-api');
+const { LATEST_API_VERSION, DeliveryMethod } = require('@shopify/shopify-api');
 const {
   TursoSessionStorage,
   MemorySessionStorage,
@@ -19,9 +15,8 @@ const {
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = (process.env.HOST || 'http://localhost:3000').replace(/\/$/, '');
-const PRO_PLAN = 'Pro';
-// Testmodus ist Standard – erst beim Launch BILLING_TEST=false setzen!
-const BILLING_TEST = process.env.BILLING_TEST !== 'false';
+// App-Handle aus dem Dev Dashboard – Teil der Managed-Pricing-URL
+const APP_HANDLE = process.env.APP_HANDLE || 'shipgoal-versandziel';
 
 const sessionStorage = process.env.TURSO_DATABASE_URL
   ? new TursoSessionStorage(
@@ -46,14 +41,6 @@ const shopify = shopifyApp({
       .map((s) => s.trim())
       .filter(Boolean),
     hostName: HOST.replace(/^https?:\/\//, ''),
-    billing: {
-      [PRO_PLAN]: {
-        amount: 2.99,
-        currencyCode: 'EUR',
-        interval: BillingInterval.Every30Days,
-        trialDays: 14,
-      },
-    },
   },
   auth: {
     path: '/api/auth',
@@ -156,66 +143,35 @@ async function syncPlanMetafield(session, plan) {
   }
 }
 
-// Aktuellen Plan abfragen (und Metafield synchron halten)
+// Aktuellen Plan aus den aktiven Managed-Pricing-Abos lesen
+// (Abos heißen so wie die Pläne im Dev Dashboard, z. B. "Pro")
 app.get('/api/plan', async (_req, res) => {
   try {
     const session = res.locals.shopify.session;
-    const hasPro = await shopify.api.billing.check({
-      session,
-      plans: [PRO_PLAN],
-      isTest: BILLING_TEST,
-    });
+    const client = new shopify.api.clients.Graphql({ session });
+    const r = await client.request(
+      `{ currentAppInstallation { activeSubscriptions { name status } } }`
+    );
+    const subs = r.data?.currentAppInstallation?.activeSubscriptions || [];
+    const hasPro = subs.some(
+      (s) => s.status === 'ACTIVE' && /pro/i.test(s.name || '')
+    );
     const plan = hasPro ? 'pro' : 'free';
     await syncPlanMetafield(session, plan);
-    res.json({ plan, shop: session.shop, billingTest: BILLING_TEST });
+    res.json({ plan, shop: session.shop, subscriptions: subs });
   } catch (e) {
     console.error('[ShipGoal] /api/plan:', e);
     res.status(500).json({ error: e.message });
   }
 });
 
-// Upgrade auf Pro -> liefert confirmationUrl, Redirect macht das Frontend
-app.post('/api/upgrade', async (_req, res) => {
-  try {
-    const session = res.locals.shopify.session;
-    const confirmationUrl = await shopify.api.billing.request({
-      session,
-      plan: PRO_PLAN,
-      isTest: BILLING_TEST,
-      returnUrl: `${HOST}/?shop=${encodeURIComponent(session.shop)}`,
-    });
-    res.json({ confirmationUrl });
-  } catch (e) {
-    console.error('[ShipGoal] /api/upgrade:', e);
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// Downgrade: alle aktiven Subscriptions kündigen, Plan-Metafield auf free
-app.post('/api/downgrade', async (_req, res) => {
-  try {
-    const session = res.locals.shopify.session;
-    const client = new shopify.api.clients.Graphql({ session });
-    const r = await client.request(
-      `{ currentAppInstallation { activeSubscriptions { id name } } }`
-    );
-    const subs = r.data?.currentAppInstallation?.activeSubscriptions || [];
-    for (const sub of subs) {
-      await client.request(
-        `mutation Cancel($id: ID!) {
-           appSubscriptionCancel(id: $id) {
-             userErrors { field message }
-           }
-         }`,
-        { variables: { id: sub.id } }
-      );
-    }
-    await syncPlanMetafield(session, 'free');
-    res.json({ plan: 'free' });
-  } catch (e) {
-    console.error('[ShipGoal] /api/downgrade:', e);
-    res.status(500).json({ error: e.message });
-  }
+// Link zur Shopify-Plan-Auswahl (Managed Pricing) – Upgrade UND Downgrade
+app.get('/api/pricing-url', (_req, res) => {
+  const session = res.locals.shopify.session;
+  const store = session.shop.replace('.myshopify.com', '');
+  res.json({
+    url: `https://admin.shopify.com/store/${store}/charges/${APP_HANDLE}/pricing_plans`,
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -232,7 +188,15 @@ app.get('/', shopify.ensureInstalledOnShop(), (_req, res) => {
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+// Sicherheitsnetz: Fehler loggen statt Prozess-Crash
+process.on('unhandledRejection', (err) => {
+  console.error('[ShipGoal] Unhandled Rejection:', err);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[ShipGoal] Uncaught Exception:', err);
+});
+
 app.listen(PORT, () => {
   console.log(`[ShipGoal] läuft auf Port ${PORT} (${HOST})`);
-  console.log(`[ShipGoal] Billing-Testmodus: ${BILLING_TEST}`);
+  console.log(`[ShipGoal] Billing: Shopify Managed Pricing (Handle: ${APP_HANDLE})`);
 });
