@@ -212,6 +212,25 @@ app.get('/api/pricing-url', (_req, res) => {
 // ---------------------------------------------------------------------------
 app.use(shopify.cspHeaders());
 
+// Exit-Iframe-Seite: Die Library leitet hierher, wenn eine Re-Authentifizierung
+// nötig ist. Die Seite bricht per App Bridge aus dem Admin-iframe aus.
+app.get('/exitiframe', (req, res) => {
+  const redirectUri = String(req.query.redirectUri || req.query.exitIframe || '');
+  const allowed =
+    redirectUri.startsWith(HOST) ||
+    /^https:\/\/admin\.shopify\.com\//.test(redirectUri) ||
+    /^https:\/\/[a-z0-9][a-z0-9-]*\.myshopify\.com\//.test(redirectUri);
+  const target = allowed ? redirectUri : '/';
+  res.set('Content-Type', 'text/html').send(`<!doctype html>
+<html><head>
+<meta name="shopify-api-key" content="${process.env.SHOPIFY_API_KEY || ''}">
+<script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+</head><body>
+<p>Weiterleitung zu Shopify…</p>
+<script>open(${JSON.stringify(target)}, '_top');</script>
+</body></html>`);
+});
+
 app.get('/', shopify.ensureInstalledOnShop(), (_req, res) => {
   const html = fs
     .readFileSync(path.join(__dirname, '..', 'public', 'admin.html'), 'utf8')
