@@ -194,20 +194,40 @@
         btnUp.textContent = plan === 'pro' ? 'Aktiver Plan' : 'Pro testen';
       }
 
+      // Session-Token explizit von App Bridge holen – macht Auth-Probleme sichtbar,
+      // statt dass Requests still hängen bleiben.
+      function getToken() {
+        if (!window.shopify || typeof window.shopify.idToken !== 'function') {
+          return Promise.reject(new Error('App Bridge nicht initialisiert – API-Key oder Einbettung prüfen.'));
+        }
+        return Promise.race([
+          window.shopify.idToken(),
+          new Promise(function (_resolve, reject) {
+            setTimeout(function () { reject(new Error('Timeout beim Abruf des Session-Tokens (App Bridge).')); }, 8000);
+          })
+        ]);
+      }
+
+      function authedFetch(url) {
+        return getToken().then(function (token) {
+          return fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+        });
+      }
+
       function loadPlan() {
-        fetch('/api/plan')
+        authedFetch('/api/plan')
           .then(function (r) { return r.json(); })
           .then(function (d) {
             if (d.error) return showError(d.error);
             applyPlan(d.plan);
             shopLine.textContent = d.shop || shop;
           })
-          .catch(function () { showError('Plan konnte nicht geladen werden.'); });
+          .catch(function (err) { showError('Plan konnte nicht geladen werden: ' + err.message); });
       }
 
       // Managed Pricing: Plan-Auswahl (Upgrade UND Downgrade) macht Shopify selbst
       function goToPricing() {
-        fetch('/api/pricing-url')
+        authedFetch('/api/pricing-url')
           .then(function (r) { return r.json(); })
           .then(function (d) {
             if (d.url) { open(d.url, '_top'); }
