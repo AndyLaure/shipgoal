@@ -1,0 +1,18 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "dfe8aa5a72e06c005f2e280127aa9939"
+application_url = "https://shipgoal.onrender.com"
+embedded = true
+name = "ShipGoal – Versandziel"
+
+[webhooks]
+api_version = "2025-07"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = ""
+optional_scopes = [ ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [ "https://shipgoal.onrender.com/api/auth/callback" ]
