@@ -50,6 +50,9 @@ const shopify = shopifyApp({
     path: '/api/webhooks',
   },
   sessionStorage,
+  // Ablaufende Offline-Tokens: Die Library erneuert abgelaufene Tokens automatisch.
+  // Das Flag muss auf dieser obersten Ebene stehen (nicht im api-Block).
+  future: { expiringOfflineAccessTokens: true },
 });
 
 // ---------------------------------------------------------------------------
@@ -136,7 +139,7 @@ app.post(
 app.get('/healthz', (_req, res) => res.send('ok'));
 
 // Ab hier: authentifizierte API-Routen (Session-Token aus App Bridge)
-app.use('/api/*', shopify.validateAuthenticatedSession());
+app.use('/api/*splat', shopify.validateAuthenticatedSession()); // Express-5-Syntax
 app.use(express.json());
 
 // ---------------------------------------------------------------------------
